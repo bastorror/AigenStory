@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Story Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-image: url('https://static.wikia.nocookie.net/aesthetics/images/c/cd/Fantasy_World.jpg/revision/latest?cb=20201122150254');
+      background-size: cover;
+      background-position: center;
+      transition: background-image 0.5s ease-in-out;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+      max-width: 500px;
+      width: 100%;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    label {
+      margin-top: 10px;
+      font-size: 16px;
+      color: #333;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      transition: all 0.3s ease;
+    }
+
+    input:focus, select:focus, button:hover {
+      border-color: #2575fc;
+      outline: none;
+    }
+
+    button {
+      background-color: #2575fc;
+      color: white;
+      cursor: pointer;
+      border: none;
+    }
+
+    button:disabled {
+      background-color: #aaa;
+    }
+
+    #result {
+      margin-top: 20px;
+      white-space: pre-wrap;
+      color: #333;
+      font-size: 16px;
+      word-wrap: break-word;
+      max-height: 300px;
+      overflow-y: auto;
+      padding-right: 10px;
+    }
+
+    #result::after {
+      content: "|";
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0% { opacity: 1; }
+      50% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    .loader {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #2575fc;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>AI Story Generator</h1>
+
+    <label for="prompt">Enter a theme or starting sentence:</label>
+    <input type="text" id="prompt" placeholder="e.g. A knight in a futuristic kingdom..." />
+
+    <label for="length">Select story length:</label>
+    <select id="length">
+      <option value="150">Short</option>
+      <option value="500" selected>Medium</option>
+      <option value="1000">Long</option>
+    </select>
+
+    <label for="theme">Select a theme:</label>
+    <select id="theme" onchange="updateBackground()">
+      <option value="fantasy">Fantasy</option>
+      <option value="sci-fi">Sci-Fi</option>
+      <option value="mystery">Mystery</option>
+      <option value="romance">Romance</option>
+      <option value="adventure">Adventure</option>
+    </select>
+
+    <button onclick="generateStory()">Generate Story</button>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const themes = {
+      fantasy: {
+        background: 'https://as2.ftcdn.net/v2/jpg/01/28/67/71/1000_F_128677127_IaJbvtDMEjNy9AlO3O84x1BIoMb4LHQT.jpg',
+      },
+      'sci-fi': {
+        background: 'https://t3.ftcdn.net/jpg/02/40/34/18/360_F_240341874_JC6iZsCAqekKx3f7GhqMapE5Goc7rA40.jpg',
+      },
+      mystery: {
+        background: 'https://media.istockphoto.com/id/178366909/photo/silhouette-of-man-smoking-a-cigar-holding-a-magnifying-glass.jpg?s=612x612&w=0&k=20&c=hvJtDysdO__Ph1LouEUxPtm-RYvquUogUcTfiNsH1mE=',
+      },
+      romance: {
+        background: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1500&q=80',
+      },
+      adventure: {
+        background: 'https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?auto=format&fit=crop&w=1500&q=80',
+      }
+    };
+
+    function updateBackground() {
+      const theme = document.getElementById("theme").value;
+      const selected = themes[theme];
+      if (selected) {
+        document.body.style.backgroundImage = `url(${selected.background})`;
+      }
+    }
+
+    async function generateStory() {
+      const prompt = document.getElementById("prompt").value;
+      const length = parseInt(document.getElementById("length").value);
+      const theme = document.getElementById("theme").value;
+      const resultDiv = document.getElementById("result");
+
+      resultDiv.innerHTML = "<div class='loader'></div>";
+
+      const response = await fetch("http://127.0.0.1:8000/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, length, theme }),
+      });
+
+      const data = await response.json();
+      const story = data.story;
+
+      resultDiv.innerHTML = "";
+      for (let i = 0; i < story.length; i++) {
+        resultDiv.innerHTML += story[i];
+        await new Promise((resolve) => setTimeout(resolve, 30));
+      }
+    }
+  </script>
+</body>
+</html>
