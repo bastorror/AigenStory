@@ -27,32 +27,40 @@ def generate_text():
     prompt = data.get("prompt", "")
     length = int(data.get("length", 150))  # default to 150 if not provided
     theme = data.get("theme", "adventure")  # default to 'adventure' theme if not provided
-    
+
     # Modify the prompt based on the selected theme
     theme_keywords = theme_dict.get(theme, ['adventure'])
     theme_intro = f"Once upon a time in a {theme_keywords[0]} setting, "
     themed_prompt = theme_intro + prompt
 
-    # Encode the prompt with the theme modification
-    input_ids = tokenizer.encode(themed_prompt, return_tensors="pt")
-    
-    # Generate the story using the GPT2 model
+    # Properly encode inputs and extract attention mask
+    inputs = tokenizer(themed_prompt, return_tensors="pt", padding=True, truncation=True)
+    input_ids = inputs["input_ids"]
+    attention_mask = inputs["attention_mask"]
+
+    # Generate the story
     output = model.generate(
-        input_ids,
-        max_length=length + len(input_ids[0]),
+        input_ids=input_ids,
+        attention_mask=attention_mask,
+        max_length=length + input_ids.shape[1],
         do_sample=True,
-        temperature=0.9,
+        num_return_sequences=1,
+        no_repeat_ngram_size=2,
+        temperature=0.7,
         top_k=50,
-        top_p=0.95
+        top_p=0.95,
+        pad_token_id=tokenizer.eos_token_id
     )
-    
-    # Decode the generated output
-    story = tokenizer.decode(output[0], skip_special_tokens=True)
 
-    # Remove the theme intro part from the story output
-    generated_story = story[len(themed_prompt):].strip()
+    # Decode generated output
+    generated_texts = []
+    for generated_sequence in output:
+        generated_text = tokenizer.decode(generated_sequence, skip_special_tokens=True)
+        if themed_prompt in generated_text:
+            generated_text = generated_text.replace(themed_prompt, "", 1).strip()
+        generated_texts.append(generated_text)
 
-    return jsonify({"story": generated_story})
+    return jsonify({"story": generated_texts})
 
 if __name__ == '__main__':
     app.run(debug=True, port=8000)
